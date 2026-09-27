@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 _extracted.txt
 _preview.txt
+data/_deleted_dims.jsonl
