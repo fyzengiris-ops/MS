@@ -507,6 +507,8 @@ body {
   cursor: pointer;
   font: inherit;
   color: inherit;
+  /* Avoid iOS double-tap zoom interfering with mobile double-tap-to-open */
+  touch-action: manipulation;
 }
 .q-item:hover {
   background: rgba(26, 138, 92, 0.04);

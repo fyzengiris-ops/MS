@@ -53,6 +53,16 @@
   kwBubble.setAttribute("role", "tooltip");
   document.body.appendChild(kwBubble);
   let kwHideTimer = null;
+  // Mobile: single tap → keywords, double tap → open answer
+  const mobileCardTap = { id: null, time: 0 };
+  const MOBILE_DBL_TAP_MS = 320;
+
+  function prefersTouchCardInteraction() {
+    // Prefer devices without hover; also treat narrow coarse-pointer as phone-like.
+    if (window.matchMedia("(hover: none)").matches) return true;
+    return window.matchMedia("(pointer: coarse)").matches
+      && window.matchMedia("(max-width: 860px)").matches;
+  }
 
   function showToast(msg, ok = true) {
     toastEl.textContent = msg;
@@ -67,6 +77,7 @@
     kwBubble.hidden = true;
     kwBubble.classList.remove("is-empty", "is-structured", "is-below");
     kwBubble.innerHTML = "";
+    delete kwBubble.dataset.forCard;
   }
 
   /**
@@ -160,6 +171,7 @@
     kwBubble.classList.toggle("is-structured", rendered.structured);
     kwBubble.innerHTML = rendered.html;
     kwBubble.hidden = false;
+    kwBubble.dataset.forCard = cardEl.dataset.card || "";
 
     // Place above card; if overflow top, flip below
     const rect = cardEl.getBoundingClientRect();
@@ -1020,8 +1032,34 @@
     }
 
     const toggle = e.target.closest("[data-toggle]");
-    if (toggle) {
-      toggleQuestion(toggle.dataset.toggle);
+    if (!toggle) return;
+
+    const id = toggle.dataset.toggle;
+    // PC: click opens/closes full answer. Mobile: single tap keywords, double tap open/close.
+    if (!prefersTouchCardInteraction()) {
+      toggleQuestion(id);
+      return;
+    }
+
+    const card = toggle.closest(".q-card");
+    const now = Date.now();
+    const isDoubleTap =
+      mobileCardTap.id === id && now - mobileCardTap.time <= MOBILE_DBL_TAP_MS;
+
+    if (isDoubleTap || state.openId === id) {
+      mobileCardTap.id = null;
+      mobileCardTap.time = 0;
+      toggleQuestion(id);
+      return;
+    }
+
+    mobileCardTap.id = id;
+    mobileCardTap.time = now;
+    const item = data.items.find((x) => x.id === id);
+    if (!kwBubble.hidden && kwBubble.dataset.forCard === id) {
+      hideKeywordBubble();
+    } else {
+      showKeywordBubble(card, item);
     }
   });
 
@@ -1030,8 +1068,9 @@
     if (e.target.closest("[data-dim-delete]")) e.preventDefault();
   });
 
-  // Hover collapsed card → keyword bubble
+  // PC only: hover collapsed card → keyword bubble
   els.questionList.addEventListener("pointerover", (e) => {
+    if (prefersTouchCardInteraction()) return;
     const card = e.target.closest(".q-card");
     if (!card || !els.questionList.contains(card)) return;
     if (card.contains(e.relatedTarget)) return;
@@ -1044,6 +1083,7 @@
   });
 
   els.questionList.addEventListener("pointerout", (e) => {
+    if (prefersTouchCardInteraction()) return;
     const card = e.target.closest(".q-card");
     if (!card || !els.questionList.contains(card)) return;
     if (card.contains(e.relatedTarget)) return;
@@ -1054,8 +1094,23 @@
     }, 80);
   });
 
-  kwBubble.addEventListener("pointerenter", () => clearTimeout(kwHideTimer));
-  kwBubble.addEventListener("pointerleave", () => hideKeywordBubble());
+  kwBubble.addEventListener("pointerenter", () => {
+    if (prefersTouchCardInteraction()) return;
+    clearTimeout(kwHideTimer);
+  });
+  kwBubble.addEventListener("pointerleave", () => {
+    if (prefersTouchCardInteraction()) return;
+    hideKeywordBubble();
+  });
+
+  // Mobile: tap elsewhere dismisses keyword bubble
+  document.addEventListener("click", (e) => {
+    if (!prefersTouchCardInteraction()) return;
+    if (kwBubble.hidden) return;
+    if (e.target.closest(".kw-bubble")) return;
+    if (e.target.closest("[data-toggle]")) return;
+    hideKeywordBubble();
+  });
 
   window.addEventListener("scroll", () => {
     hideKeywordBubble();
