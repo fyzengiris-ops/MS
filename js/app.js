@@ -209,6 +209,8 @@
 
   function catName(id) {
     if (id === "all") return "全部问题";
+    if (id === "mock1") return "模拟一面";
+    if (id === "mock2") return "模拟二面";
     return data.categories.find((c) => c.id === id)?.name || id;
   }
 
@@ -790,16 +792,21 @@
   function renderCats() {
     sortCategoriesInPlace();
     const counts = countsByCat();
-    const cats = [{ id: "all", name: "全部问题" }, ...data.categories];
+    const cats = [
+      { id: "all", name: "全部问题" },
+      { id: "mock1", name: "模拟一面" },
+      { id: "mock2", name: "模拟二面" },
+      ...data.categories,
+    ];
     els.catNav.innerHTML = cats
       .map(
         (c) => `
-      <button type="button" class="cat-btn ${state.categoryId === c.id ? "active" : ""}" data-cat="${c.id}" ${
-          c.id === "all" ? "" : 'title="按住拖动可调整顺序"'
+      <button type="button" class="cat-btn ${state.categoryId === c.id ? "active" : ""} ${c.id === "mock1" || c.id === "mock2" ? "is-mock" : ""}" data-cat="${c.id}" ${
+          c.id === "all" || c.id === "mock1" || c.id === "mock2" ? "" : 'title="按住拖动可调整顺序"'
         }>
         <span class="cat-grip" aria-hidden="true">⋮⋮</span>
         <span class="cat-name">${escapeHtml(c.name)}</span>
-        <span class="count">${counts[c.id] || 0}</span>
+        <span class="count">${c.id === "mock1" || c.id === "mock2" ? "练" : counts[c.id] || 0}</span>
       </button>`
       )
       .join("");
@@ -864,12 +871,12 @@
   function readCategoryOrderFromDom() {
     return [...els.catNav.querySelectorAll(".cat-btn[data-cat]")]
       .map((btn) => btn.dataset.cat)
-      .filter((id) => id && id !== "all");
+      .filter((id) => id && id !== "all" && id !== "mock1" && id !== "mock2");
   }
 
   function placeDraggedCategory(clientY) {
     if (!catDrag.el) return;
-    const others = [...els.catNav.querySelectorAll('.cat-btn[data-cat]:not([data-cat="all"])')].filter(
+    const others = [...els.catNav.querySelectorAll('.cat-btn[data-cat]:not([data-cat="all"]):not([data-cat="mock1"]):not([data-cat="mock2"])')].filter(
       (btn) => btn !== catDrag.el
     );
     let before = null;
@@ -885,6 +892,19 @@
   }
 
   function renderList(opts = {}) {
+    if (state.categoryId === "mock1" || state.categoryId === "mock2") {
+      const round = state.categoryId === "mock2" ? 2 : 1;
+      els.viewTitle.textContent = round === 2 ? "模拟二面 · 负责人/总监/HRBP" : "模拟一面 · 业务面试官";
+      els.questionList.classList.remove("has-active");
+      els.questionList.innerHTML = `<div id="mockRoot" class="mock-root"></div>`;
+      if (typeof window.renderMockInterview === "function") {
+        window.renderMockInterview(document.getElementById("mockRoot"), round);
+      } else {
+        els.questionList.innerHTML = `<div class="empty">模拟面试脚本未加载</div>`;
+      }
+      return;
+    }
+
     const { scrollToId = null } = opts;
     state.editing = null;
     hideHlBubble();
@@ -947,7 +967,7 @@
 
   els.catNav.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
-    const btn = e.target.closest('.cat-btn[data-cat]:not([data-cat="all"])');
+    const btn = e.target.closest('.cat-btn[data-cat]:not([data-cat="all"]):not([data-cat="mock1"]):not([data-cat="mock2"])');
     if (!btn || !els.catNav.contains(btn)) return;
     catDrag.pointerId = e.pointerId;
     catDrag.id = btn.dataset.cat;

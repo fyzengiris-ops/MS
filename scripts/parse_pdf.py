@@ -18,7 +18,7 @@ CATEGORIES = [
     {"id": "proj1", "name": "项目1｜课外AI答疑Agent", "qRange": "Q06–Q08", "order": 2},
     {"id": "proj2", "name": "项目2｜自适应学习系统", "qRange": "Q09–Q12", "order": 3},
     {"id": "proj3", "name": "项目3｜直播课堂AI助手", "qRange": "Q13–Q16", "order": 4},
-    {"id": "followup", "name": "高频项目追问", "qRange": "Q17–Q18", "order": 5},
+    {"id": "followup", "name": "高频问题", "qRange": "Q17–Q18", "order": 5},
     {"id": "ai-tech", "name": "AI技术与工具认知", "qRange": "Q19–Q23", "order": 6},
     {"id": "collab", "name": "协作相关", "qRange": "Q24", "order": 7},
     {"id": "biz", "name": "公司业务延伸", "qRange": "Q25–Q27", "order": 8},

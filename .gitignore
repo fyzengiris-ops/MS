@@ -6,3 +6,4 @@ __pycache__/
 _extracted.txt
 _preview.txt
 data/_deleted_dims.jsonl
+data/ark.local.json
